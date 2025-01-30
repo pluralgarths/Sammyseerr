@@ -1,0 +1,60 @@
+version: "3.8"
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx_proxy
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+    volumes:
+      # This volume points to a custom nginx.conf that sets up a reverse proxy.
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - mainnet
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: my_app
+    ports:
+      - "3000:3000" # Expose only if you want direct access without the proxy
+    environment:
+      # Example environment variables for connecting to Postgres
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${db_name}
+      POSTGRES_USER: ${db_user}
+      POSTGRES_PASSWORD: ${db_password}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - db
+      - redis
+    networks:
+      - mainnet
+
+  db:
+    image: postgres:14-alpine
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: ${db_user}
+      POSTGRES_PASSWORD: ${db_password}
+      POSTGRES_DB: ${db_name}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - mainnet
+
+  redis:
+    image: redis:6-alpine
+    container_name: redis_cache
+    networks:
+      - mainnet
+
+volumes:
+  db_data:
+
+networks:
+  mainnet:
