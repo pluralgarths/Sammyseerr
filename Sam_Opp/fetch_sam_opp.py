@@ -21,13 +21,18 @@ def get_sam_opportunities(posted_from: str, posted_to: str, limit: int = 10):
         f"{base_url}?limit={limit}&api_key={sam_key}&postedFrom={posted_from}&postedTo={posted_to}"
     )
     
+    # Ensure appropriate output directory exists
+    output_dir = "SamDataOutTest" if environment == "test" else "SamDataOut"
+    os.makedirs(output_dir, exist_ok=True)
+    output_file = os.path.join(output_dir, "sam_opportunities.json")
+    
     try:
         response = requests.get(url)
         response.raise_for_status()
         data = response.json()
         
         # Save data to a JSON file for future analysis
-        with open("sam_opportunities.json", "w", encoding="utf-8") as f:
+        with open(output_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4)
         
         return data
@@ -37,10 +42,10 @@ def get_sam_opportunities(posted_from: str, posted_to: str, limit: int = 10):
 
 if __name__ == "__main__":
     # Set date range for the last month
-    posted_to = datetime.today().strftime("%m/%d/%Y")
-    posted_from = (datetime.today() - timedelta(days=30)).strftime("%m/%d/%Y")
+    posted_to = datetime.today().strftime("%Y-%m-%d")
+    posted_from = (datetime.today() - timedelta(days=30)).strftime("%Y-%m-%d")
     
-    opportunities = get_sam_opportunities(posted_from, posted_to, limit=1000)
+    opportunities = get_sam_opportunities(posted_from, posted_to, limit=10)
     
     if opportunities:
         print(json.dumps(opportunities, indent=4))
