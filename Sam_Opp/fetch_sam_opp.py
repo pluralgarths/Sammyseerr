@@ -41,9 +41,9 @@ def get_sam_opportunities(posted_from: str, posted_to: str, limit: int = 10):
         return None
 
 if __name__ == "__main__":
-    # Set date range for the last month
-    posted_to = datetime.today().strftime("%Y-%m-%d")
-    posted_from = (datetime.today() - timedelta(days=30)).strftime("%Y-%m-%d")
+    # Set date range for the last 30 days with correct MM/dd/yyyy format
+    posted_to = datetime.today().strftime("%m/%d/%Y")
+    posted_from = (datetime.today() - timedelta(days=30)).strftime("%m/%d/%Y")
     
     opportunities = get_sam_opportunities(posted_from, posted_to, limit=10)
     
