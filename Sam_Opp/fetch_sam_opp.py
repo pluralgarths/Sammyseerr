@@ -20,7 +20,8 @@ def get_sam_opportunities(posted_from: str, posted_to: str, limit: int = 10):
     url = (
         f"{base_url}?limit={limit}&api_key={sam_key}&postedFrom={posted_from}&postedTo={posted_to}"
     )
-    
+    print(f"Fetching data from {url}")
+
     # Ensure appropriate output directory exists
     output_dir = "SamDataOutTest" if environment == "test" else "SamDataOut"
     os.makedirs(output_dir, exist_ok=True)
@@ -43,7 +44,7 @@ def get_sam_opportunities(posted_from: str, posted_to: str, limit: int = 10):
 if __name__ == "__main__":
     # Set date range for the last 30 days with correct MM/dd/yyyy format
     posted_to = datetime.today().strftime("%m/%d/%Y")
-    posted_from = (datetime.today() - timedelta(days=30)).strftime("%m/%d/%Y")
+    posted_from = (datetime.today() - timedelta(days=31)).strftime("%m/%d/%Y")
     
     opportunities = get_sam_opportunities(posted_from, posted_to, limit=10)
     
