@@ -1,16 +1,24 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config(); // now process.env.MY_VAR is available
-const app = (0, express_1.default)();
+import express from "express";
+import dotenv from "dotenv";
+import authRoutes from "./auth";
+import { scraperQueue } from "./scraper";
+
+dotenv.config();
+
+const app = express();
 const PORT = process.env.PORT || 3000;
-app.get("/", (req, res) => {
-    res.send("Hello from TypeScript + Express!");
+
+app.use(express.json());
+
+// Authentication routes (login/signup)
+app.use("/auth", authRoutes);
+
+// Route to trigger the scraper
+app.post("/run-scraper", async (req, res) => {
+  await scraperQueue.add("scrape", {});
+  res.json({ message: "Scraper job added to queue" });
 });
+
 app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });

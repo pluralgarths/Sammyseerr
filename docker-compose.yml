@@ -8,7 +8,6 @@ services:
     ports:
       - "80:80"
     volumes:
-      # This volume points to a custom nginx.conf that sets up a reverse proxy.
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
       - mainnet
@@ -17,12 +16,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-
     container_name: my_app
     ports:
-      - "3000:3000" # Expose only if you want direct access without the proxy
+      - "3000:3000"
     environment:
-      # Example environment variables for connecting to Postgres
       POSTGRES_HOST: db
       POSTGRES_DB: ${db_name}
       POSTGRES_USER: ${db_user}
@@ -50,6 +47,25 @@ services:
   redis:
     image: redis:6-alpine
     container_name: redis_cache
+    networks:
+      - mainnet
+
+ scraper:
+    image: python:3.11
+    container_name: sam_scraper
+    volumes:
+      - ./Sam_Opp:/app/scripts
+      - ./SamDataOut:/app/data
+    working_dir: /app/scripts
+    command: ["sleep", "infinity"]  # Prevents auto-run
+    environment:
+      SAM_API_KEY: ${SAM_API_KEY}
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${db_name}
+      POSTGRES_USER: ${db_user}
+      POSTGRES_PASSWORD: ${db_password}
+    depends_on:
+      - db
     networks:
       - mainnet
 
