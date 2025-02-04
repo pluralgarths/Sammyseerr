@@ -1,6 +1,10 @@
-import { Worker } from "bullmq";
+import { Queue, Worker } from "bullmq";
 import { pool } from "./db";
-import ollama from "ollama"; // Local AI model
+import ollama from "ollama";
+
+const enrichmentQueue = new Queue("ai_enrichment", {
+  connection: { host: "redis", port: 6379 },
+});
 
 async function enrichData(id: number, title: string, details: string) {
   console.log(`Enriching contract ${id}...`);
@@ -17,16 +21,16 @@ async function enrichData(id: number, title: string, details: string) {
     return;
   }
 
-  await pool.query("UPDATE contracts SET enriched_data = $1 WHERE id = $2", [
-    JSON.stringify({ summary: enrichedText }),
-    id,
-  ]);
+  await pool.query(
+    "UPDATE opportunities SET enriched_data = $1 WHERE id = $2",
+    [JSON.stringify({ summary: enrichedText }), id]
+  );
 
   console.log(`Contract ${id} enriched successfully!`);
 }
 
-// AI Worker
-const aiWorker = new Worker(
+// Worker to process AI enrichment jobs
+new Worker(
   "ai_enrichment",
   async (job) => {
     const { id, title, details } = job.data;
@@ -37,15 +41,7 @@ const aiWorker = new Worker(
   }
 );
 
-// Trigger AI Enrichment
-async function processAIEnrichment() {
-  const result = await pool.query(
-    "SELECT * FROM contracts WHERE enriched_data IS NULL"
-  );
-  for (const row of result.rows) {
-    await aiWorker.add("enrich", row);
-  }
+// Function to add jobs to the queue
+export async function queueEnrichment(id: number, title: string, details: string) {
+  await enrichmentQueue.add("enrich", { id, title, details });
 }
-
-// Run enrichment every minute
-setInterval(processAIEnrichment, 60000);
