@@ -1,4 +1,5 @@
 version: "3.8"
+
 services:
   nginx:
     image: nginx:stable-alpine
@@ -21,9 +22,9 @@ services:
       - "3000:3000"
     environment:
       POSTGRES_HOST: db
-      POSTGRES_DB: ${db_name}
-      POSTGRES_USER: ${db_user}
-      POSTGRES_PASSWORD: ${db_password}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
     depends_on:
@@ -35,17 +36,16 @@ services:
   db:
     image: postgres:14-alpine
     container_name: postgres_db
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: ${db_user}
-      POSTGRES_PASSWORD: ${db_password}
-      POSTGRES_DB: ${db_name}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d 
+      - ./init-scripts:/docker-entrypoint-initdb.d # Runs init.sql if DB is empty
     networks:
       - mainnet
-  volumes:
-    db_data:
 
   redis:
     image: redis:6-alpine
@@ -53,20 +53,23 @@ services:
     networks:
       - mainnet
 
- scraper:
-    image: python:3.11
+  scraper:
+    build:
+      context: ./scraper # Assuming your Python script is inside the 'scraper' directory
+      dockerfile: Dockerfile
     container_name: sam_scraper
     volumes:
-      - ./Sam_Opp:/app/scripts
-      - ./SamDataOut:/app/data
+      - ./scraper:/app/scripts # Mounts scripts for execution
+      - ./sam_json_data:/app/data # Stores JSON data
+      - ./sam_opportunities.json:/app/data/sam_opportunities.json # Ensures data persistence
     working_dir: /app/scripts
-    command: ["sleep", "infinity"]  # Prevents auto-run
+    command: ["python", "load_sam_data.py"] # Automatically loads data
     environment:
-      SAM_API_KEY: ${SAM_API_KEY}
-      POSTGRES_HOST: db
-      POSTGRES_DB: ${db_name}
-      POSTGRES_USER: ${db_user}
-      POSTGRES_PASSWORD: ${db_password}
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
     depends_on:
       - db
     networks:
