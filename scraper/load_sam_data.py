@@ -1,54 +1,68 @@
 import os
 import json
 import psycopg2
-from dotenv import load_dotenv
+from datetime import datetime
 
-# Load environment variables from .env
-load_dotenv()
-
-# Database connection settings from .env
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = os.getenv("DB_PORT", 5432)
+# Database connection settings from environment variables
+DB_HOST = os.getenv("DB_HOST", "db")
+DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
-# Connect to PostgreSQL
-conn = psycopg2.connect(
-    host=DB_HOST,
-    port=DB_PORT,
-    database=DB_NAME,
-    user=DB_USER,
-    password=DB_PASSWORD
-)
-cursor = conn.cursor()
+# Path to JSON file
+environment = os.getenv("ENV", "production").lower()
+json_file_path = "/data/sam_opportunities.json" if environment == "test" else "samdataout/sam_opportunities.json"
 
-# Load JSON file
-with open("sam_opportunities.json", "r") as file:
-    data = json.load(file)
+def load_json_to_db():
+    """Reads JSON data and inserts it into the PostgreSQL database."""
 
-# Insert Opportunities
-for opp in data["opportunitiesData"]:
-    cursor.execute("""
-        INSERT INTO opportunities (
-            notice_id, title, solicitation_number, full_parent_path_name,
-            posted_date, type, base_type, archive_type, archive_date,
-            response_deadline, naics_code, classification_code, active,
-            description, organization_type
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT (notice_id) DO NOTHING;
-    """, (
-        opp["noticeId"], opp["title"], opp.get("solicitationNumber"),
-        opp["fullParentPathName"], opp["postedDate"], opp["type"], 
-        opp["baseType"], opp.get("archiveType"), opp.get("archiveDate"),
-        opp.get("responseDeadLine"), opp.get("naicsCode"), opp["classificationCode"],
-        True if opp["active"] == "Yes" else False,
-        opp["description"], opp["organizationType"]
-    ))
+    if not os.path.exists(json_file_path):
+        print(f"❌ JSON file not found: {json_file_path}")
+        return
 
-# Commit and close connection
-conn.commit()
-cursor.close()
-conn.close()
+    # Connect to PostgreSQL
+    conn = psycopg2.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        database=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD
+    )
+    cursor = conn.cursor()
 
-print("✅ Data successfully loaded into PostgreSQL!")
+    try:
+        # Read JSON data
+        with open(json_file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        records = data.get("opportunitiesData", [])  # Adjust key if needed
+
+        if not records:
+            print("⚠️ No opportunities found in JSON file.")
+            return
+
+        # Insert data into PostgreSQL
+        for item in records:
+            title = item.get("title", "Unknown Title")
+            description = item.get("description", "No Description")
+            agency = item.get("agency", "Unknown Agency")
+            posted_date = datetime.strptime(item.get("postedDate", "01/01/1970"), "%m/%d/%Y").date()
+
+            cursor.execute(
+                "INSERT INTO opportunities (title, description, agency, posted_date) VALUES (%s, %s, %s, %s)",
+                (title, description, agency, posted_date)
+            )
+
+        conn.commit()
+        print("✅ Data successfully inserted into PostgreSQL.")
+
+    except Exception as e:
+        print(f"❌ Error loading data: {e}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
+if __name__ == "__main__":
+    load_json_to_db()

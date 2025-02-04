@@ -11,6 +11,23 @@ services:
     networks:
       - mainnet
 
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${DB_ADMIN}
+      PGADMIN_DEFAULT_PASSWORD: ${DB_ADMIN_PASSWORD}
+    ports:
+      - "8081:80"
+    depends_on:
+      db:
+        condition: service_healthy  # Ensure PostgreSQL is fully ready
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin  # Correct placement
+    networks:
+      - mainnet
+
   app:
     build:
       context: .
@@ -39,11 +56,18 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
+      ADMIN_USERNAME: ${DB_ADMIN}
+      ADMIN_PASSWORD: ${DB_ADMIN_PASSWORD}
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d # Runs init.sql if DB is empty
+      - ./init-scripts:/docker-entrypoint-initdb.d  # Runs init.sql if DB is empty
     networks:
       - mainnet
+    healthcheck:  # Ensure PostgreSQL is fully initialized before starting `pgAdmin`
+      test: ["CMD", "pg_isready", "-U", "${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:6-alpine
@@ -53,28 +77,28 @@ services:
 
   scraper:
     build:
-      context: ./scraper # Assuming your Python script is inside the 'scraper' directory
-      dockerfile: Dockerfile
+     context: ./scraper
+     dockerfile: Dockerfile
     container_name: sam_scraper
     volumes:
-      - ./scraper:/app/scripts # Mounts scripts for execution
-      - ./sam_json_data:/app/data # Stores JSON data
-      - ./sam_opportunities.json:/app/data/sam_opportunities.json # Ensures data persistence
+      - ./scraper:/app/scripts
+      - ./SamDataOutTest:/data  # Mounts JSON data
     working_dir: /app/scripts
-    command: ["python", "load_sam_data.py"] # Automatically loads data
     environment:
       - DB_HOST=db
       - DB_PORT=5432
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
+      - ENV=test
     depends_on:
       - db
+      - redis
     networks:
       - mainnet
-
 volumes:
   db_data:
+  pgadmin_data:  # Add missing volume
 
 networks:
   mainnet:
