@@ -16,7 +16,7 @@ def main():
     posted_from = (datetime.today() - timedelta(days=30)).strftime("%m/%d/%Y")
 
     try:
-        subprocess.run(["python", script_path, posted_from, posted_to], check=True)
+        subprocess.run(["python3", script_path, posted_from, posted_to], check=True)
     except subprocess.CalledProcessError as e:
         print(f"Error executing script: {e}")
 
