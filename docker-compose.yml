@@ -41,8 +41,11 @@ services:
       POSTGRES_DB: ${db_name}
     volumes:
       - db_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d 
     networks:
       - mainnet
+  volumes:
+    db_data:
 
   redis:
     image: redis:6-alpine
