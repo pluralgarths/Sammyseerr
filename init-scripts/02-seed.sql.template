@@ -4,7 +4,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- Seed Admin User with bcrypt-hashed password
 INSERT INTO users (username, password)
 VALUES 
-  ('', crypt('', gen_salt('bf')));
+  ('$DB_ADMIN_USER', crypt('$DB_ADMIN_PASSWORD', gen_salt('bf')));
   
 -- Seed Sample Opportunities
 INSERT INTO opportunities (
