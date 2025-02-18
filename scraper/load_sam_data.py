@@ -43,7 +43,7 @@ def load_json_to_db():
         with open(json_file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        records = data.get("opportunitiesData", [])  # Adjust key if needed
+        records = data.get("opportunitiesData", [])
 
         if not records:
             print("⚠️ No opportunities found in JSON file.")
@@ -51,15 +51,27 @@ def load_json_to_db():
 
         # Insert data into PostgreSQL
         for item in records:
+            notice_id = item.get("noticeId") or item.get("id")  # Try multiple keys
+            if not notice_id:
+                print(f"⚠️ Skipping opportunity with no notice_id: {item}")
+                continue  # Skip records without notice_id
+
             title = item.get("title", "Unknown Title")
             description = item.get("description", "No Description")
             agency = item.get("fullParentPathName", "Unknown Agency")
             posted_date = parse_date(item.get("postedDate", "1970-01-01"))
 
-            cursor.execute(
-                "INSERT INTO opportunities (title, description, full_parent_path_name, posted_date) VALUES (%s, %s, %s, %s)",
-                (title, description, agency, posted_date)
-            )
+            try:
+                cursor.execute(
+                    """
+                    INSERT INTO opportunities (
+                        notice_id, title, description, full_parent_path_name, posted_date
+                    ) VALUES (%s, %s, %s, %s, %s)
+                    """,
+                    (notice_id, title, description, agency, posted_date)
+                )
+            except Exception as insert_error:
+                print(f"⚠️ Failed to insert record for notice_id {notice_id}: {insert_error}")
 
         conn.commit()
         print("✅ Data successfully inserted into PostgreSQL.")

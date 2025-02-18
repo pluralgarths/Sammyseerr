@@ -14,22 +14,22 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Create Opportunities Table if not exists
 CREATE TABLE IF NOT EXISTS opportunities (
     id SERIAL PRIMARY KEY,
-    notice_id TEXT UNIQUE NOT NULL,
-    title TEXT NOT NULL,
-    solicitation_number TEXT,
-    full_parent_path_name TEXT,
-    posted_date DATE NOT NULL,
-    type TEXT NOT NULL,
-    base_type TEXT NOT NULL,
-    archive_type TEXT,
+    notice_id VARCHAR(50) UNIQUE NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    solicitation_number VARCHAR(100),
+    full_parent_path_name VARCHAR(500),
+    posted_date DATE,
+    type VARCHAR(50) NOT NULL,  -- Ensure NOT NULL constraint is defined
+    base_type VARCHAR(50),
+    archive_type VARCHAR(50),
     archive_date DATE,
     response_deadline TIMESTAMP,
-    naics_code TEXT,
-    classification_code TEXT,
-    active BOOLEAN DEFAULT TRUE,
+    naics_code VARCHAR(20),
+    classification_code VARCHAR(20),
+    active BOOLEAN,
     description TEXT,
-    organization_type TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    organization_type VARCHAR(100)
 );
