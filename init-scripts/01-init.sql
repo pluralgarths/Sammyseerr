@@ -7,12 +7,14 @@ BEGIN
    END IF;
 END $$;
 
+
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE opportunities ALTER COLUMN type SET DEFAULT 'Uncategorized';
 
 -- Create Opportunities Table if not exists
 CREATE TABLE IF NOT EXISTS opportunities (
