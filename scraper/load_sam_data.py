@@ -14,6 +14,13 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 environment = os.getenv("ENV", "production").lower()
 json_file_path = "/data/sam_opportunities.json" if environment == "test" else "samdataout/sam_opportunities.json"
 
+def parse_date(date_str, default="1970-01-01"):
+    """Convert date to YYYY-MM-DD format for PostgreSQL"""
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        return datetime.strptime(default, "%Y-%m-%d").date()
+
 def load_json_to_db():
     """Reads JSON data and inserts it into the PostgreSQL database."""
 
@@ -46,11 +53,11 @@ def load_json_to_db():
         for item in records:
             title = item.get("title", "Unknown Title")
             description = item.get("description", "No Description")
-            agency = item.get("agency", "Unknown Agency")
-            posted_date = datetime.strptime(item.get("postedDate", "01/01/1970"), "%m/%d/%Y").date()
+            agency = item.get("fullParentPathName", "Unknown Agency")
+            posted_date = parse_date(item.get("postedDate", "1970-01-01"))
 
             cursor.execute(
-                "INSERT INTO opportunities (title, description, agency, posted_date) VALUES (%s, %s, %s, %s)",
+                "INSERT INTO opportunities (title, description, full_parent_path_name, posted_date) VALUES (%s, %s, %s, %s)",
                 (title, description, agency, posted_date)
             )
 

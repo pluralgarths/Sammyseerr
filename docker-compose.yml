@@ -22,9 +22,9 @@ services:
       - "8081:80"
     depends_on:
       db:
-        condition: service_healthy  # Ensure PostgreSQL is fully ready
+        condition: service_healthy # Ensure PostgreSQL is fully ready
     volumes:
-      - pgadmin_data:/var/lib/pgadmin  # Correct placement
+      - pgadmin_data:/var/lib/pgadmin # Correct placement
     networks:
       - mainnet
 
@@ -60,10 +60,10 @@ services:
       ADMIN_PASSWORD: ${DB_ADMIN_PASSWORD}
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./init-scripts:/docker-entrypoint-initdb.d  # Runs init.sql if DB is empty
+      - ./init-scripts:/docker-entrypoint-initdb.d # Runs init.sql if DB is empty
     networks:
       - mainnet
-    healthcheck:  # Ensure PostgreSQL is fully initialized before starting `pgAdmin`
+    healthcheck: # Ensure PostgreSQL is fully initialized before starting `pgAdmin`
       test: ["CMD", "pg_isready", "-U", "${DB_USER}"]
       interval: 10s
       timeout: 5s
@@ -77,12 +77,12 @@ services:
 
   scraper:
     build:
-     context: ./scraper
-     dockerfile: Dockerfile
+      context: ./scraper
+      dockerfile: Dockerfile
     container_name: sam_scraper
     volumes:
       - ./scraper:/app/scripts
-      - ./SamDataOutTest:/data  # Mounts JSON data
+      - ./SamDataOutTest:/data # Mounts JSON data
     working_dir: /app/scripts
     environment:
       - DB_HOST=db
@@ -96,9 +96,22 @@ services:
       - redis
     networks:
       - mainnet
+  postgrest:
+    image: postgrest/postgrest
+    container_name: postgrest
+    environment:
+      PGRST_DB_URI: postgres://${DB_USER}:${DB_PASSWORD}@db/${DB_NAME}
+      PGRST_DB_SCHEMA: public
+      PGRST_DB_ANON_ROLE: ${DB_USER}
+    depends_on:
+      - db
+    networks:
+      - mainnet
+    ports:
+      - "3001:3001"
 volumes:
   db_data:
-  pgadmin_data:  # Add missing volume
+  pgadmin_data:
 
 networks:
   mainnet:
